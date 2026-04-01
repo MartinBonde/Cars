@@ -1,0 +1,506 @@
+#LyX 2.5 created this file. For more info see https://www.lyx.org/
+\lyxformat 643
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children no
+\language american
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification default
+\crossref_package refstyle
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\backgroundcolor none
+\fontcolor none
+\notefontcolor lightgray
+\boxbgcolor red
+\table_border_color default
+\table_odd_row_color default
+\table_even_row_color default
+\table_alt_row_colors_start 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\docbook_mathml_version 0
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+The household first chooses between new cars and used cars,
+ and then between fuel types indexed 
+\begin_inset Formula $f$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+d=CES\left(d^{new},d^{used}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{new}=CES\left(d^{new}_{f}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{used}=CES\left(d^{used}_{f,t}-h_{f}d^{used}_{f,t-1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $h_{f}\in(0,1)$
+\end_inset
+
+ is a habit parameter.
+ Only the stock in excess of the habit reference point 
+\begin_inset Formula $h_{f}d^{used}_{f,t-1}$
+\end_inset
+
+ generates marginal utility.
+ This creates inertia:
+ a household with a large inherited stock of used cars of type 
+\begin_inset Formula $f$
+\end_inset
+
+ has a high reference point,
+ making it costly (in utility terms) to reduce holdings.
+ When 
+\begin_inset Formula $h_{f}=0$
+\end_inset
+
+ the model reduces to the standard CES with no state dependence.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $a=0$
+\end_inset
+
+ denote new cars,
+ so 
+\begin_inset Formula $d_{0,f,t}\equiv d^{new}_{f,t}$
+\end_inset
+
+.
+ Cars of age 
+\begin_inset Formula $a$
+\end_inset
+
+ depreciate at rate 
+\begin_inset Formula $\delta_{a,f,t}$
+\end_inset
+
+,
+ which can vary by age,
+ fuel type,
+ and time.
+ The stock evolves as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d_{a,f,t}=\left(1-\delta_{a-1,f,t}\right)d_{a-1,f,t-1}\quad a\geq1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In particular 
+\begin_inset Formula $\delta_{0,f,t}$
+\end_inset
+
+ is the first-period depreciation rate of new cars.
+ Used cars of a given fuel type are perfect substitutes (with weights equal to the un-depreciated share) such that
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{used}_{f,t}=\sum^{\infty}_{a=1}d_{a,f,t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If depreciation rates are independent of age for 
+\begin_inset Formula $a\geq1$
+\end_inset
+
+ (i.e.
+ 
+\begin_inset Formula $\delta_{a,f,t}=\delta_{f,t}$
+\end_inset
+
+ for 
+\begin_inset Formula $a\geq1$
+\end_inset
+
+,
+ while 
+\begin_inset Formula $\delta_{0,f,t}$
+\end_inset
+
+ may differ),
+ the stock of used cars can be written simply as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{used}_{f,t}=\left(1-\delta_{f,t}\right)d^{used}_{f,t-1}+\left(1-\delta_{0,f,t}\right)d^{new}_{f,t-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+CES nests
+\end_layout
+
+\begin_layout Subsection
+Top level:
+ new vs.
+ used
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ be the elasticity of substitution between new and used cars,
+ with share parameters 
+\begin_inset Formula $\mu^{new}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu^{used}$
+\end_inset
+
+.
+ The budget constraint is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{d}_{t}\,d_{t}=p^{uc,new}_{t}\,d^{new}_{t}+p^{uc,used}_{t}\,d^{used}_{t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $p^{d}_{t}$
+\end_inset
+
+ is the shadow price of the car-service aggregate,
+ 
+\begin_inset Formula $p^{uc,new}_{t}$
+\end_inset
+
+ is the user cost of the new-car aggregate,
+ and 
+\begin_inset Formula $p^{uc,used}_{t}$
+\end_inset
+
+ is the user cost of the used-car aggregate.
+ The conditional demands are
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{new}_{t}=\mu^{new}\,d_{t}\!\left[\frac{p^{uc,new}_{t}}{p^{d}_{t}}\right]^{-\sigma},\qquad d^{used}_{t}=\mu^{used}\,d_{t}\!\left[\frac{p^{uc,used}_{t}}{p^{d}_{t}}\right]^{-\sigma}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The user cost of the car-service aggregate is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{uc,d}_{t}=p^{d}_{t}-\frac{1-\delta^{d}_{t+1}}{1+r_{t+1}}p^{d}_{t+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+New-car nest:
+ across fuel types
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\sigma^{new}$
+\end_inset
+
+ be the elasticity and 
+\begin_inset Formula $\mu^{new}_{f}$
+\end_inset
+
+ the share parameters.
+ The budget constraint is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{uc,new}_{t}\,d^{new}_{t}=\sum_{f}p^{uc,new}_{f,t}\,d^{new}_{f,t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The conditional demands are
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{new}_{f,t}=\mu^{new}_{f}\,d^{new}_{t}\!\left(\frac{p^{uc,new}_{f,t}}{p^{uc,new}_{t}}\right)^{-\sigma^{new}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The user cost of a new car of fuel type 
+\begin_inset Formula $f$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{uc,new}_{f,t}=p^{new}_{f,t}-\frac{1-\delta_{0,f,t+1}}{1+r_{t+1}}p^{used}_{f,t+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A fraction 
+\begin_inset Formula $1-\delta_{0,f,t+1}$
+\end_inset
+
+ of each new car survives into the used stock next period — the same 
+\begin_inset Formula $a=0$
+\end_inset
+
+ depreciation rate that enters the accumulation equation — so the resale value is discounted accordingly.
+\end_layout
+
+\begin_layout Subsection
+Used-car nest:
+ across fuel types (with habits)
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\sigma^{used}$
+\end_inset
+
+ be the elasticity and 
+\begin_inset Formula $\mu^{used}_{f}$
+\end_inset
+
+ the share parameters.
+ Because the CES aggregator is over habit-adjusted quantities 
+\begin_inset Formula $d^{used}_{f,t}-h_{f}d^{used}_{f,t-1}$
+\end_inset
+
+,
+ the budget constraint is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{uc,used}_{t}\,d^{used}_{t}=\sum_{f}p^{uc}_{f,t}\!\left(d^{used}_{f,t}-h_{f}d^{used}_{f,t-1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The conditional demands are
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d^{used}_{f,t}-h_{f}d^{used}_{f,t-1}=\mu^{used}_{f}\,d^{used}_{t}\!\left(\frac{p^{uc}_{f,t}}{p^{uc,used}_{t}}\right)^{-\sigma^{used}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The user cost of a used car of fuel type 
+\begin_inset Formula $f$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p^{uc}_{f,t}=p^{used}_{f,t}-\frac{1-\delta_{f,t+1}}{1+r_{t+1}}p^{used}_{f,t+1}+\frac{1-\delta_{f,t+1}}{1+r_{t+1}}h_{f}\,p^{uc,used}_{t+1}\,\mu^{used}_{f}\!\left(\frac{d^{used}_{t+1}}{d^{used}_{f,t+1}-h_{f}d^{used}_{f,t}}\right)^{\frac{1}{\sigma^{used}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The first two terms are the standard asset-pricing user cost:
+ the purchase price minus the discounted resale value.
+ The third term is the habit premium:
+ holding more used cars of type 
+\begin_inset Formula $f$
+\end_inset
+
+ today raises next period's reference point by 
+\begin_inset Formula $h_{f}(1-\delta_{f,t+1})$
+\end_inset
+
+,
+ which reduces the effective service flow 
+\begin_inset Formula $d^{used}_{f,t+1}-h_{f}d^{used}_{f,t}$
+\end_inset
+
+ and hence increases the marginal cost of maintaining the same utility level tomorrow.
+ When 
+\begin_inset Formula $h_{f}=0$
+\end_inset
+
+ the habit premium vanishes and the user cost reduces to the standard expression.
+\end_layout
+
+\end_body
+\end_document
