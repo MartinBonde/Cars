@@ -134,38 +134,57 @@ println("\nPlot saved to cars_scenario1.svg")
 
 # ==============================================================================
 # Counterfactual 2: Revenue-neutral tax/subsidy
-# A 10% subsidy on electric cars financed by a constant endogenous tax on
-# petrol cars, such that the present value of net tax revenue is zero.
+# A 10% subsidy on electric cars financed by a common constant petrol tax
+# across all brands, such that PV net tax revenue is zero.
 # ==============================================================================
-@variables db.model begin
-	tax_revenue[t], "Net tax revenue from new-car taxes/subsidies"
-	pv_tax_revenue, "Present value of net tax revenue"
+function pv_tax_revenue(data, yrs)
+	sum(
+		(
+			sum(data[τ_bf[bb, ff, yr]] * data[p_new_bf[bb, ff, yr]] * data[car_new_bf[bb, ff, yr]] for bb in b, ff in f)
+		) / (1 + data[r[yr]])^(yr - t₁)
+		for yr in yrs
+	)
 end
 
-revenue_neutral_eqs() = @block db begin
-	tax_revenue[t = t₁:T],
-	tax_revenue[t] == ∑(τ_bf[b,f,t] * p_new_bf[b,f,t] * car_new_bf[b,f,t] for b ∈ b, f ∈ f)
+function solve_common_petrol_tax!(data; lo=-0.50, hi=1.50, tol=1e-10, max_iter=80, max_expand=12)
+	function eval_at!(τ)
+		data[τ_bf[:, :petrol, t₁:T]] .= τ
+		solve!(equations(), data)
+		pv_tax_revenue(data, t₁:T)
+	end
 
-	pv_tax_revenue,
-	pv_tax_revenue == ∑(tax_revenue[t] / (1 + r[t])^(t - t₁) for t ∈ t₁:T)
+	f_lo = eval_at!(lo)
+	f_hi = eval_at!(hi)
+	for _ in 1:max_expand
+		sign(f_lo) != sign(f_hi) && break
+		lo -= 0.5
+		hi += 0.5
+		f_lo = eval_at!(lo)
+		f_hi = eval_at!(hi)
+	end
+	sign(f_lo) != sign(f_hi) || error("Failed to bracket PV-neutral petrol tax")
 
-	τ_bf[b = b, f = [:petrol], t = t₁:T-1],
-	τ_bf[b, f, t] == τ_bf[b, f, T]
+	for _ in 1:max_iter
+		mid = (lo + hi) / 2
+		f_mid = eval_at!(mid)
+		abs(f_mid) <= tol && return mid
+		if sign(f_mid) == sign(f_lo)
+			lo, f_lo = mid, f_mid
+		else
+			hi = mid
+		end
+	end
+	(lo + hi) / 2
 end
 
 scenario2 = copy(baseline)
 scenario2[τ_bf[:, :electric, t₁:T]] .= -0.10
-scenario2[τ_bf[:, :petrol, t₁:T]] .= 0.3
-scenario2[tax_revenue[t₁:T]] .= 0.0
-scenario2[pv_tax_revenue] = 0.0
 
-model2 = equations() + revenue_neutral_eqs()
-@endo_exo_swap! model2 begin
-	τ_bf[:brand1, :petrol, T], pv_tax_revenue
-end
-solve!(model2, scenario2)
+τ_common = solve_common_petrol_tax!(scenario2)
+scenario2[τ_bf[:, :petrol, t₁:T]] .= τ_common
+solve!(equations(), scenario2)
 
-τ_val = round(scenario2[τ_bf[:brand1, :petrol, t₁]] * 100; digits=2)
+τ_val = round(τ_common * 100; digits=2)
 println("\nRevenue-neutral petrol tax rate: τ_petrol = $τ_val%")
 
 # ==============================================================================

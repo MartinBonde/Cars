@@ -24,7 +24,7 @@ db = ModelDictionary(Model(Ipopt.Optimizer))
 set_silent(db.model)
 
 const f = [:petrol, :electric]
-const b = [:brand1, :brand2, :brand3]
+const b = [:brand1, :brand2, :brand3, :brand4, :brand5]
 const t₀ = 2024
 const max_T = 2100
 const t = t₀:max_T

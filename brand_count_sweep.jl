@@ -70,8 +70,7 @@ for N in brand_counts
 	brand_line = "const b = [" * join(brand_syms, ", ") * "]"
 
 	car_model_src = read(joinpath(base_dir, "car_model.jl"), String)
-	patched_src = replace(car_model_src,
-		"const b = [:brand1, :brand2, :brand3]" => brand_line)
+	patched_src = replace(car_model_src, r"const b = \[[^\n]*\]" => brand_line)
 
 	patched_model_path = joinpath(tempdir(), "car_model_N$(N).jl")
 	write(patched_model_path, patched_src)
@@ -140,16 +139,16 @@ scatter!(ax, Float64.(Ns), imp_fwd; color=c_fwd, markersize=7)
 lines!(ax, Float64.(Ns), imp_myopic; color=c_myopic, linewidth=2.5, linestyle=:dash, label="βₕ = 0 (myopic)")
 scatter!(ax, Float64.(Ns), imp_myopic; color=c_myopic, markersize=7)
 
-bi = findfirst(==(3), Ns)
+bi = findfirst(==(5), Ns)
 if bi !== nothing
-	scatter!(ax, [3.0], [imp_fwd[bi]]; color=c_base, markersize=12, marker=:diamond)
-	scatter!(ax, [3.0], [imp_myopic[bi]]; color=c_base, markersize=12, marker=:diamond)
+	scatter!(ax, [5.0], [imp_fwd[bi]]; color=c_base, markersize=12, marker=:diamond)
+	scatter!(ax, [5.0], [imp_myopic[bi]]; color=c_base, markersize=12, marker=:diamond)
 end
 
 axislegend(ax; position=:rb, framevisible=false, labelsize=11)
 
 Label(fig[2,1],
-	"Shaded area = forward-lookingness premium.  ◆ = baseline (3 brands).  Impact elasticity shown.";
+	"Shaded area = forward-lookingness premium.  ◆ = baseline (5 brands).  Impact elasticity shown.";
 	fontsize=10, halign=:center, color=:grey45, padding=(0, 0, 0, 2))
 rowgap!(fig.layout, 1, 4)
 
