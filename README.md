@@ -196,15 +196,7 @@ The effect is quantitatively more pronounced in the **short run** (impact) than 
 | 0.85 | −0.484 | −0.374 |
 | 0.90 | −0.468 | −0.374 |
 
-**Habit persistence has a non-monotonic effect on market power.** As $`h`$ rises from 0 to about 0.80, the demand elasticity becomes less negative (smaller quantity drop), meaning sellers gain market power through lock-in. Beyond $`h \approx 0.85`$, the steady-state elasticity reverses and demand becomes slightly *more* elastic again, while the impact elasticity continues to decrease in magnitude but at a decelerating rate.
-
-Two competing forces explain this:
-
-1. **Lock-in effect** (dominates at low-to-moderate $`h`$): Higher $`h`$ means households inheriting a used-car stock find it costly to deviate from their current composition, because the habit-adjusted service flow $`d^{used}_{f,t} - h d^{used}_{f,t-1}`$ shrinks. This reduces competitive pressure from the used market on new-car sellers, raising market power.
-
-2. **Habit-premium feedback** (dominates at high $`h`$): When $`h`$ is very high, the habit premium in the user cost of used cars becomes large, raising the price of car services overall. With $`\sigma_C = 0.5 < 1`$ (cars and non-car goods are complements), this tightens the overall car budget and makes new-car demand more sensitive to cost-push shocks.
-
-At the baseline calibration ($`h = 0.80`$), the model sits near the inflection point where these two forces approximately balance.
+**Stronger habits increase market power.** Higher $`h`$ means households inheriting a used-car stock find it costly to deviate from their current composition, because the habit-adjusted service flow $`d^{used}_{f,t} - h d^{used}_{f,t-1}`$ shrinks. This reduces competitive pressure from the used market on new-car sellers, raising market power. The effect is large in the short run — the impact elasticity falls by about a third between $`h = 0`$ and $`h = 0.9`$ — but modest in the steady state, where it saturates around $`h \approx 0.8`$.
 
 #### (c) Effect of Forward-Lookingness ($`\beta_h`$)
 
@@ -216,20 +208,18 @@ At the baseline calibration ($`h = 0.80`$), the model sits near the inflection p
 | 0.7 | −0.513 | −0.378 |
 | **1.0** (fully forward-looking) | **−0.500** | **−0.374** |
 
-**More forward-looking households face *less* elastic demand — i.e., new-car sellers have *more* market power.** This is the opposite of what one might expect, and it is also the opposite sign from the recalibration approach, confirming that controlling for calibration was important.
-
-The mechanism: when $`\beta_h = 1`$, the household internalises the habit premium — it knows that holding more used cars today raises tomorrow's reference point. This makes used cars *more expensive* in effective terms (higher user cost). The higher user cost of used cars makes used cars a worse outside option for households, *reducing* competitive pressure on new-car sellers and giving them more pricing power.
+**More forward-looking households face *less* elastic demand — i.e., new-car sellers have *more* market power.** When $`\beta_h = 1`$, the household internalises the habit premium — it knows that holding more used cars today raises tomorrow's reference point. This makes used cars *more expensive* in effective terms (higher user cost), *reducing* competitive pressure on new-car sellers and giving them more pricing power.
 
 When $`\beta_h = 0`$ (myopic), the household ignores the habit premium entirely. Used cars look cheaper than they "truly" are, so households treat them as a stronger competitive substitute to new cars. This makes new-car demand more elastic and reduces seller market power.
 
-The effect is about 4.3 percentage points in the impact elasticity and 1.1 pp in the SS elasticity between the fully myopic and fully forward-looking cases. The sign is robust and monotonic across the entire grid.
+The effect is about 4 percentage points in the impact elasticity and 1 pp in the SS elasticity between the fully myopic and fully forward-looking cases.
 
 #### Summary: Three Forces on Market Power
 
 | Channel | Effect on market power | Mechanism |
 |---|---|---|
 | **Durability ↑** | ↓ Less market power | Durable goods compete with themselves (Coase conjecture) |
-| **Habits ↑** | ↑ then ↓ (non-monotonic) | Lock-in dominates at low $`h`$; habit-premium feedback dominates at high $`h`$ |
+| **Habits ↑** | ↑ More market power | Lock-in reduces competitive pressure from used cars; effect saturates at high $`h`$ |
 | **Forward-lookingness ↑** | ↑ More market power | Internalising habit premium raises the effective cost of used cars, weakening the used-car outside option |
 
 ## Running
