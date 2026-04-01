@@ -266,6 +266,23 @@ Panel (d) shows the **impact elasticity** as a function of $`\sigma_b`$ for both
 
 In other words, **brand variety and forward-lookingness are complements for market power**: the more competitive the brand landscape, the more valuable it is for sellers that households internalise the habit cost of used cars.
 
+#### (e) Effect of the Number of Brands
+
+| $`N`$ | Impact (fwd) | Impact (myopic) | Gap | SS (fwd) | SS (myopic) | Gap |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | −0.500 | −0.542 | 0.043 | −0.374 | −0.385 | 0.011 |
+| 2 | −3.017 | −3.409 | 0.392 | −2.618 | −2.779 | 0.161 |
+| **3** | **−3.614** | **−4.334** | **0.720** | **−3.232** | **−3.632** | **0.400** |
+| 5 | −4.584 | −4.857 | 0.273 | −3.935 | −3.995 | 0.060 |
+| 8 | −4.753 | −5.360 | 0.607 | −4.197 | −4.424 | 0.227 |
+| 12 | −5.179 | −5.556 | 0.378 | −4.488 | −4.513 | 0.025 |
+
+![Brand-Level Market Power vs Number of Brands](brand_count.svg)
+
+More brands **reduces individual brand market power**: the impact elasticity goes from −0.50% for a monopolist ($`N = 1`$) to −5.18% with 12 brands. The $`N = 1`$ case recovers the original pre-brand model — confirming that the brand nest is a strict generalization.
+
+The **forward-lookingness premium** (gap between myopic and forward-looking) is negligible for a monopolist (0.04 pp) but substantial under competition (0.72 pp at $`N = 3`$). A monopolist already has strong market power from being the sole seller, so the habit channel adds little. Under competition, brand-level market power depends on the used-car outside option from competing brands, and the habit premium makes that outside option costlier for forward-looking households.
+
 #### Summary: Three Forces on Brand Market Power
 
 | Channel | Effect on market power | Mechanism |
@@ -279,13 +296,16 @@ In other words, **brand variety and forward-lookingness are complements for mark
 ```julia
 julia --project=. cars.jl
 julia --project=. market_power.jl
+julia --project=. brand_count_sweep.jl
 ```
 
 `cars.jl` solves the baseline calibration, runs both counterfactual scenarios, and saves plots to `cars_baseline.svg`, `cars_scenario1.svg`, and `cars_scenario2.svg`.
 
 `market_power.jl` calibrates the model once at baseline parameters, computes the brand-level demand elasticities for each parameter variation, and saves the four-panel figure to `market_power.svg`.
 
-Both scripts share the model definition from `car_model.jl`.
+`brand_count_sweep.jl` varies the number of symmetric brands ($`N = 1, 2, 3, 5, 8, 12`$) by spawning separate Julia processes with a patched `car_model.jl`, and saves the result to `brand_count.svg`.
+
+All scripts share the model definition from `car_model.jl`.
 
 ### Dependencies
 
