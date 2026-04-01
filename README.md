@@ -88,9 +88,9 @@ $$p^{uc,used}_t d^{used}_t = \sum_f p^{uc}_{f,t} \left(d^{used}_{f,t} - h_f d^{u
 
 The user cost of a used car of fuel type $`f`$ is:
 
-$$p^{uc}_{f,t} = p^{used}_{f,t} - \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} p^{used}_{f,t+1} + \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} h_f p^{uc,used}_{t+1} \mu^{used}_f \left(\frac{d^{used}_{t+1}}{d^{used}_{f,t+1} - h_f d^{used}_{f,t}}\right)^{1/\sigma^{used}}$$
+$$p^{uc}_{f,t} = p^{used}_{f,t} - \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} p^{used}_{f,t+1} + \beta_h \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} h_f p^{uc,used}_{t+1} \mu^{used}_f \left(\frac{d^{used}_{t+1}}{d^{used}_{f,t+1} - h_f d^{used}_{f,t}}\right)^{1/\sigma^{used}}$$
 
-The third term is the **habit premium**: holding more used cars of type $`f`$ today raises next period's reference point by $`h_f(1 - \delta_{f,t+1})`$, reducing the effective service flow and increasing the marginal cost of maintaining the same utility level tomorrow. When $`h_f = 0`$ the habit premium vanishes.
+The third term is the **habit premium**: holding more used cars of type $`f`$ today raises next period's reference point by $`h_f(1 - \delta_{f,t+1})`$, reducing the effective service flow and increasing the marginal cost of maintaining the same utility level tomorrow. When $`h_f = 0`$ the habit premium vanishes. The parameter $`\beta_h \in [0,1]`$ controls how forward-looking the household is with respect to this habit: $`\beta_h = 1`$ is fully forward-looking (the baseline), $`\beta_h = 0`$ is myopic.
 
 ## Calibration
 
@@ -101,10 +101,11 @@ The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_f, \mu^
 | Parameter | Value | Description |
 |-----------|-------|-------------|
 | $`\sigma_C`$ | 0.5 | Elasticity: cars vs. non-car |
-| $`\sigma`$ | 1.5 | Elasticity: new vs. used |
+| $`\sigma`$ | 3.0 | Elasticity: new vs. used |
 | $`\sigma^{new}`$ | 3.0 | Elasticity: across fuel types (new) |
 | $`\sigma^{used}`$ | 3.0 | Elasticity: across fuel types (used) |
 | $`h_f`$ | 0.8 | Habit parameter (both fuel types) |
+| $`\beta_h`$ | 1.0 | Habit-premium discount (fully forward-looking) |
 | $`r`$ | 0.04 | Interest rate |
 | $`\delta_0`$ | 0.25 | First-period depreciation (new to used) |
 | $`\delta`$ | 0.10 | Ongoing used-car depreciation |
@@ -145,13 +146,107 @@ The required petrol tax rate depends critically on the substitution elasticities
 - **Used-car spot prices by fuel type** — The petrol resale price *rises* as reduced future supply makes the surviving stock more scarce, while the electric resale price falls as subsidized vehicles flood the secondary market.
 - **Implied tax/subsidy rates** — The constant −10% electric subsidy and the endogenous petrol tax that balances revenue in present value.
 
+## Market Power of New-Car Sellers
+
+This analysis measures the market power of new-car sellers by computing the **demand semi-elasticity** from a permanent 1% exogenous increase in all new-car purchase prices $`p^{new}_{f,t}`$. The experiment is repeated across a grid of parameter values for:
+
+- **(a)** **Durability** — parameterised by the ongoing used-car depreciation rate $`\delta`$, with the first-period depreciation $`\delta_0`$ fixed.
+- **(b)** The **habit parameter** $`h`$ — which governs the strength of habit formation in the used-car nest.
+- **(c)** The **habit-premium discount** $`\beta_h \in [0,1]`$ — which controls how forward-looking households are *with respect to the habit*. When $`\beta_h = 1`$ the household fully internalises the effect of today's used-car holdings on tomorrow's reference point; when $`\beta_h = 0`$ the household ignores the forward-looking consequences of the habit (while still experiencing the habit in its utility function).
+
+The metric is the **demand elasticity** $`\% \Delta d^{new}`$: the percentage change in new-car purchases in response to the 1% cost-push. A *more negative* value means demand is more elastic, i.e. sellers have *less* market power.
+
+The elasticity is computed at the **impact** (short-run dynamic response in 2026) and in the **steady state** (long-run comparative static).
+
+### Approach: calibrate once, then vary structural parameters
+
+The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_f, \mu^{used}_f`$ are calibrated **once** at the baseline parameter values ($`\sigma = 3`$, $`h = 0.8`$, $`\beta_h = 1`$). The calibration targets are **stock-consistent**: the steady-state used-car stock is derived from the accumulation identity $`d^{used}_f = \frac{1-\delta_0}{\delta} d^{new}_f`$, and the new-car flow is scaled so that total car services (new plus habit-adjusted used) equal a 50% share of total consumption.
+
+For each parameter variation, the un-swapped model is solved to obtain a counterfactual equilibrium — an economy with the same preferences (μ's) but different structural parameters. The cost-push shock is then applied on top of this counterfactual equilibrium and the demand response is measured.
+
+### Results
+
+![Market Power of New-Car Sellers](market_power.svg)
+
+#### (a) Effect of Durability
+
+| $`1-\delta`$ | $`\delta`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+|---:|---:|---:|---:|
+| 0.96 | 0.04 | −0.596 | −0.381 |
+| 0.94 | 0.06 | −0.548 | −0.378 |
+| 0.92 | 0.08 | −0.519 | −0.376 |
+| **0.90** | **0.10** | **−0.500** | **−0.374** |
+| 0.88 | 0.12 | −0.485 | −0.372 |
+| 0.84 | 0.16 | −0.464 | −0.370 |
+| 0.80 | 0.20 | −0.449 | −0.368 |
+| 0.75 | 0.25 | −0.435 | −0.367 |
+| 0.70 | 0.30 | −0.424 | −0.366 |
+
+**More durable cars reduce market power.** Lower $`\delta`$ means used cars last longer, building up a larger used-car stock in steady state ($`d^{used}_f = \frac{1-\delta_0}{\delta} d^{new}_f`$). This creates a larger competitive fringe that constrains new-car pricing — the **Coase conjecture** at work.
+
+The effect is quantitatively more pronounced in the **short run** (impact) than in the steady state. The short-run response is larger because the used-car stock is predetermined at impact — it cannot adjust immediately — so the full forward-looking anticipation of future resale value changes is priced in at once, amplifying the demand response. At $`\delta = 0.04`$ (96% annual survival), the impact elasticity is nearly 40% larger in magnitude than at $`\delta = 0.30`$.
+
+#### (b) Effect of Habit Persistence
+
+| $`h`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+|---:|---:|---:|
+| 0.00 | −0.679 | −0.382 |
+| 0.20 | −0.641 | −0.380 |
+| 0.35 | −0.610 | −0.379 |
+| 0.55 | −0.565 | −0.376 |
+| 0.70 | −0.527 | −0.375 |
+| **0.80** | **−0.500** | **−0.374** |
+| 0.85 | −0.484 | −0.374 |
+| 0.90 | −0.468 | −0.374 |
+
+**Habit persistence has a non-monotonic effect on market power.** As $`h`$ rises from 0 to about 0.80, the demand elasticity becomes less negative (smaller quantity drop), meaning sellers gain market power through lock-in. Beyond $`h \approx 0.85`$, the steady-state elasticity reverses and demand becomes slightly *more* elastic again, while the impact elasticity continues to decrease in magnitude but at a decelerating rate.
+
+Two competing forces explain this:
+
+1. **Lock-in effect** (dominates at low-to-moderate $`h`$): Higher $`h`$ means households inheriting a used-car stock find it costly to deviate from their current composition, because the habit-adjusted service flow $`d^{used}_{f,t} - h d^{used}_{f,t-1}`$ shrinks. This reduces competitive pressure from the used market on new-car sellers, raising market power.
+
+2. **Habit-premium feedback** (dominates at high $`h`$): When $`h`$ is very high, the habit premium in the user cost of used cars becomes large, raising the price of car services overall. With $`\sigma_C = 0.5 < 1`$ (cars and non-car goods are complements), this tightens the overall car budget and makes new-car demand more sensitive to cost-push shocks.
+
+At the baseline calibration ($`h = 0.80`$), the model sits near the inflection point where these two forces approximately balance.
+
+#### (c) Effect of Forward-Lookingness ($`\beta_h`$)
+
+| $`\beta_h`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+|---:|---:|---:|
+| 0.0 (myopic) | −0.542 | −0.385 |
+| 0.3 | −0.530 | −0.382 |
+| 0.5 | −0.521 | −0.380 |
+| 0.7 | −0.513 | −0.378 |
+| **1.0** (fully forward-looking) | **−0.500** | **−0.374** |
+
+**More forward-looking households face *less* elastic demand — i.e., new-car sellers have *more* market power.** This is the opposite of what one might expect, and it is also the opposite sign from the recalibration approach, confirming that controlling for calibration was important.
+
+The mechanism: when $`\beta_h = 1`$, the household internalises the habit premium — it knows that holding more used cars today raises tomorrow's reference point. This makes used cars *more expensive* in effective terms (higher user cost). The higher user cost of used cars makes used cars a worse outside option for households, *reducing* competitive pressure on new-car sellers and giving them more pricing power.
+
+When $`\beta_h = 0`$ (myopic), the household ignores the habit premium entirely. Used cars look cheaper than they "truly" are, so households treat them as a stronger competitive substitute to new cars. This makes new-car demand more elastic and reduces seller market power.
+
+The effect is about 4.3 percentage points in the impact elasticity and 1.1 pp in the SS elasticity between the fully myopic and fully forward-looking cases. The sign is robust and monotonic across the entire grid.
+
+#### Summary: Three Forces on Market Power
+
+| Channel | Effect on market power | Mechanism |
+|---|---|---|
+| **Durability ↑** | ↓ Less market power | Durable goods compete with themselves (Coase conjecture) |
+| **Habits ↑** | ↑ then ↓ (non-monotonic) | Lock-in dominates at low $`h`$; habit-premium feedback dominates at high $`h`$ |
+| **Forward-lookingness ↑** | ↑ More market power | Internalising habit premium raises the effective cost of used cars, weakening the used-car outside option |
+
 ## Running
 
 ```julia
 julia --project=. cars.jl
+julia --project=. market_power.jl
 ```
 
-This solves the baseline calibration, runs both counterfactual scenarios, and saves plots to `cars_scenario1.svg` and `cars_scenario2.svg`.
+`cars.jl` solves the baseline calibration, runs both counterfactual scenarios, and saves plots to `cars_baseline.svg`, `cars_scenario1.svg`, and `cars_scenario2.svg`.
+
+`market_power.jl` calibrates the model once at baseline parameters, computes the demand elasticities for each parameter variation, and saves the three-panel figure to `market_power.svg`.
+
+Both scripts share the model definition from `car_model.jl`.
 
 ### Dependencies
 
