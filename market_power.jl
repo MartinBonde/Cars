@@ -43,7 +43,7 @@ function ss_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_val=1
 	solve!(ss_model, cf)
 
 	shocked = copy(cf)
-	shocked[p_new_f[:, t₁]] .= cf[p_new_f[:petrol, t₁]] + ε
+	shocked[p_new_f[:, t₁]] .= cf[p_new_f[:, t₁]] .* (1 + ε)
 	solve!(ss_model, shocked)
 	global T = max_T
 
@@ -70,7 +70,7 @@ function impact_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_v
 	solve!(fm, cf)
 
 	shocked = copy(cf)
-	shocked[p_new_f[:, shock_year:T]] .= cf[p_new_f[:petrol, shock_year]] + ε
+	shocked[p_new_f[:, shock_year:T]] .= cf[p_new_f[:, shock_year:T]] .* (1 + ε)
 	solve!(fm, shocked)
 	global T = max_T
 

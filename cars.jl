@@ -118,7 +118,7 @@ for (ff, ls) in zip(f, [:solid, :dash])
 end
 axislegend(ax6; position=:rt)
 
-Label(fig[0, :], "EV Subsidy Scenario: 20% Price Reduction ($(t₁)–$(T))"; fontsize=20, font=:bold)
+Label(fig[0, :], "EV Subsidy Scenario: 10% Price Reduction ($(t₁)–$(T))"; fontsize=20, font=:bold)
 
 save("cars_scenario1.svg", fig)
 println("\nPlot saved to cars_scenario1.svg")

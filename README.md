@@ -1,6 +1,6 @@
 # Partial Equilibrium Model of New and Used Cars
 
-A dynamic partial-equilibrium model of the car market implemented in Julia using [SquareModels](https://github.com/MartinBonde/SquareModels) and [Ipopt](https://github.com/coin-or/Ipopt). The model captures substitution between new and used cars across fuel types (petrol and electric), with habit formation in the used-car market.
+A dynamic partial-equilibrium model of the car market implemented in Julia using [SquareModels](https://github.com/MartinBonde/SquareModels) and [Ipopt](https://github.com/coin-or/Ipopt). The model captures substitution between new and used cars across fuel types (petrol and electric), with habit formation in the used-car market. The car block is solved holding the rest of the economy fixed: non-car demand/prices are exogenous, and new-car supply is treated as perfectly elastic imports.
 
 ## Model Structure
 
@@ -20,13 +20,9 @@ Total consumption C
 
 Total consumption $`C_t`$ and the non-car price $`p_{nc,t}`$ are exogenous. The model determines the car/non-car split, allocation across new/used and fuel types, and the market-clearing prices.
 
-## Utility Function
+## Demand Block (Partial Equilibrium)
 
-The representative household maximises
-
-$$\sum_{t=0}^{\infty} \beta^t u(C_t)$$
-
-where period utility is a nested CES aggregate of total consumption $`C_t`$:
+The model is solved as a partial-equilibrium sequence with no feedback from the car market to the rest of the economy. At each date, total consumption $`C_t`$ and the non-car price $`p_{nc,t}`$ are exogenous, and car demand is represented by a nested CES system:
 
 $$C_t = \left[\mu_{nc}^{1/\sigma_C} c_{nc,t}^{(\sigma_C-1)/\sigma_C} + \mu_d^{1/\sigma_C} d_t^{(\sigma_C-1)/\sigma_C}\right]^{\sigma_C/(\sigma_C-1)}$$
 
@@ -43,6 +39,7 @@ Used cars aggregate over fuel types with **habit formation**:
 $$d_t^{used} = \left[\sum_f (\mu_f^{used})^{1/\sigma^{used}} \left(d_{f,t}^{used} - h_f d_{f,t-1}^{used}\right)^{(\sigma^{used}-1)/\sigma^{used}}\right]^{\sigma^{used}/(\sigma^{used}-1)}$$
 
 The habit term $`h_f d_{f,t-1}^{used}`$ is the reference point: only the stock of fuel type $`f`$ in excess of this generates marginal utility. This creates inertia in the fuel-type composition of the used fleet — a household inheriting a large petrol stock finds it costly to shrink it because the habit-adjusted quantity $`d_{f,t}^{used} - h_f d_{f,t-1}^{used}`$ falls, depressing utility.
+This fuel-specific persistence channel is in the spirit of deep-habits models, adapted here to durable used-car stocks rather than non-durable consumption flows.
 
 ## Stock Accumulation
 
@@ -148,7 +145,7 @@ The required petrol tax rate depends critically on the substitution elasticities
 
 ## Market Power of New-Car Sellers
 
-This analysis measures the market power of new-car sellers by computing the **demand semi-elasticity** from a permanent 1% exogenous increase in all new-car purchase prices $`p^{new}_{f,t}`$. The experiment is repeated across a grid of parameter values for:
+This analysis measures the market power of new-car sellers by computing the **demand elasticity** from a permanent 1% exogenous increase in all new-car purchase prices $`p^{new}_{f,t}`$. The experiment is repeated across a grid of parameter values for:
 
 - **(a)** **Durability** — parameterised by the ongoing used-car depreciation rate $`\delta`$, with the first-period depreciation $`\delta_0`$ fixed.
 - **(b)** The **habit parameter** $`h`$ — which governs the strength of habit formation in the used-car nest.
@@ -253,3 +250,13 @@ Both scripts share the model definition from `car_model.jl`.
 - [JuMP](https://github.com/jump-dev/JuMP.jl) + [Ipopt](https://github.com/jump-dev/Ipopt.jl) — nonlinear optimization
 - [SquareModels](https://github.com/MartinBonde/SquareModels) — model definition and solution framework
 - [CairoMakie](https://github.com/MakieOrg/Makie.jl) — plotting
+
+## References
+
+- Coase, R. H. (1972). Durability and Monopoly. *Journal of Law and Economics*, 15(1), 143-149.
+- Stokey, N. L. (1981). Rational Expectations and Durable Goods Pricing. *The Bell Journal of Economics*, 12(1), 112-128.
+- Berry, S., Levinsohn, J., & Pakes, A. (1995). Automobile Prices in Market Equilibrium. *Econometrica*, 63(4), 841-890.
+- Goldberg, P. K. (1995). Product Differentiation and Oligopoly in International Markets: The Case of the U.S. Automobile Industry. *Econometrica*, 63(4), 891-951.
+- Bento, A. M., Goulder, L. H., Jacobsen, M. R., & von Haefen, R. H. (2009). Distributional and Efficiency Impacts of Increased U.S. Gasoline Taxes. *American Economic Review*, 99(3), 667-699.
+- Constantinides, G. M. (1990). Habit Formation: A Resolution of the Equity Premium Puzzle. *Journal of Political Economy*, 98(3), 519-543.
+- Ravn, M., Schmitt-Grohé, S., & Uribe, M. (2006). Deep Habits. *Review of Economic Studies*, 73(1), 195-218.
