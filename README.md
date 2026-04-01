@@ -1,6 +1,6 @@
 # Partial Equilibrium Model of New and Used Cars
 
-A dynamic partial-equilibrium model of the car market implemented in Julia using [SquareModels](https://github.com/MartinBonde/SquareModels) and [Ipopt](https://github.com/coin-or/Ipopt). The model captures substitution between new and used cars across fuel types (petrol and electric), with habit formation in the used-car market. The car block is solved holding the rest of the economy fixed: non-car demand/prices are exogenous, and new-car supply is treated as perfectly elastic imports.
+A dynamic partial-equilibrium model of the car market implemented in Julia using [SquareModels](https://github.com/MartinBonde/SquareModels) and [Ipopt](https://github.com/coin-or/Ipopt). The model captures substitution between new and used cars across brands and fuel types (petrol and electric), with habit formation in the used-car market. The car block is solved holding the rest of the economy fixed: non-car demand/prices are exogenous, and new-car supply is treated as perfectly elastic imports.
 
 ## Model Structure
 
@@ -10,15 +10,25 @@ The household allocates total consumption $`C_t`$ between a car-service aggregat
 Total consumption C
 ├── Non-car consumption (c_nc)
 └── Car-service aggregate (d)
-    ├── New cars (d_new)
-    │   ├── Petrol
-    │   └── Electric
-    └── Used cars (d_used)
-        ├── Petrol (with habit)
-        └── Electric (with habit)
+    ├── New cars (d_new)                          ← σ
+    │   ├── Brand 1 (d_new_b1)                    ← σ_brand
+    │   │   ├── Petrol                            ← σ_new
+    │   │   └── Electric
+    │   ├── Brand 2 (d_new_b2)
+    │   │   └── ...
+    │   └── Brand 3 (d_new_b3)
+    │       └── ...
+    └── Used cars (d_used)                        ← σ
+        ├── Brand 1 (d_used_b1)                   ← σ_brand
+        │   ├── Petrol (with habit)               ← σ_used
+        │   └── Electric (with habit)
+        ├── Brand 2 (d_used_b2)
+        │   └── ...
+        └── Brand 3 (d_used_b3)
+            └── ...
 ```
 
-Total consumption $`C_t`$ and the non-car price $`p_{nc,t}`$ are exogenous. The model determines the car/non-car split, allocation across new/used and fuel types, and the market-clearing prices.
+Total consumption $`C_t`$ and the non-car price $`p_{nc,t}`$ are exogenous. The model determines the car/non-car split, allocation across new/used, brands, and fuel types, and the market-clearing prices. Brand differentiation carries through to the used-car market: a used car retains its brand identity, so stock accumulation and habits operate at the (brand, fuel) level.
 
 ## Demand Block (Partial Equilibrium)
 
@@ -30,26 +40,30 @@ The car-service aggregate $`d_t`$ nests new and used cars:
 
 $$d_t = \left[(\mu^{new})^{1/\sigma} (d_t^{new})^{(\sigma-1)/\sigma} + (\mu^{used})^{1/\sigma} (d_t^{used})^{(\sigma-1)/\sigma}\right]^{\sigma/(\sigma-1)}$$
 
-New cars aggregate over fuel types:
+New cars first aggregate over brands, then over fuel types within each brand:
 
-$$d_t^{new} = \left[\sum_f (\mu_f^{new})^{1/\sigma^{new}} (d_{f,t}^{new})^{(\sigma^{new}-1)/\sigma^{new}}\right]^{\sigma^{new}/(\sigma^{new}-1)}$$
+$$d_t^{new} = \left[\sum_b (\mu_b^{new})^{1/\sigma_b} (d_{b,t}^{new})^{(\sigma_b-1)/\sigma_b}\right]^{\sigma_b/(\sigma_b-1)}$$
 
-Used cars aggregate over fuel types with **habit formation**:
+$$d_{b,t}^{new} = \left[\sum_f (\mu_f^{new})^{1/\sigma^{new}} (d_{b,f,t}^{new})^{(\sigma^{new}-1)/\sigma^{new}}\right]^{\sigma^{new}/(\sigma^{new}-1)}$$
 
-$$d_t^{used} = \left[\sum_f (\mu_f^{used})^{1/\sigma^{used}} \left(d_{f,t}^{used} - h_f d_{f,t-1}^{used}\right)^{(\sigma^{used}-1)/\sigma^{used}}\right]^{\sigma^{used}/(\sigma^{used}-1)}$$
+Used cars share the same brand/fuel nesting. Within each brand, fuel types are aggregated with **habit formation**:
 
-The habit term $`h_f d_{f,t-1}^{used}`$ is the reference point: only the stock of fuel type $`f`$ in excess of this generates marginal utility. This creates inertia in the fuel-type composition of the used fleet — a household inheriting a large petrol stock finds it costly to shrink it because the habit-adjusted quantity $`d_{f,t}^{used} - h_f d_{f,t-1}^{used}`$ falls, depressing utility.
-This fuel-specific persistence channel is in the spirit of deep-habits models, adapted here to durable used-car stocks rather than non-durable consumption flows.
+$$d_t^{used} = \left[\sum_b (\mu_b^{used})^{1/\sigma_b} (d_{b,t}^{used})^{(\sigma_b-1)/\sigma_b}\right]^{\sigma_b/(\sigma_b-1)}$$
+
+$$d_{b,t}^{used} = \left[\sum_f (\mu_f^{used})^{1/\sigma^{used}} \left(d_{b,f,t}^{used} - h_f d_{b,f,t-1}^{used}\right)^{(\sigma^{used}-1)/\sigma^{used}}\right]^{\sigma^{used}/(\sigma^{used}-1)}$$
+
+The habit term $`h_f d_{b,f,t-1}^{used}`$ is the reference point: only the stock of brand $`b`$, fuel type $`f`$ in excess of this generates marginal utility. This creates inertia in both the brand and fuel-type composition of the used fleet.
+This persistence channel is in the spirit of deep-habits models, adapted here to durable used-car stocks rather than non-durable consumption flows.
 
 ## Stock Accumulation
 
-Let $`a = 0`$ denote new cars so that $`d_{0,f,t} \equiv d^{new}_{f,t}`$. Cars of age $`a`$ depreciate at rate $`\delta_{a,f,t}`$ (which can vary by age, fuel type, and time) and the stock evolves as:
+Let $`a = 0`$ denote new cars so that $`d_{0,b,f,t} \equiv d^{new}_{b,f,t}`$. Cars of age $`a`$ depreciate at rate $`\delta_{a,f,t}`$ (which can vary by age, fuel type, and time) and the stock evolves as:
 
-$$d_{a,f,t} = (1 - \delta_{a-1,f,t}) d_{a-1,f,t-1}, \quad a \geq 1$$
+$$d_{a,b,f,t} = (1 - \delta_{a-1,f,t}) d_{a-1,b,f,t-1}, \quad a \geq 1$$
 
-Used cars of a given fuel type are perfect substitutes, $`d^{used}_{f,t} = \sum_{a=1}^{\infty} d_{a,f,t}`$. If depreciation rates are age-independent for $`a \geq 1`$ (i.e. $`\delta_{a,f,t} = \delta_{f,t}`$ for all $`a \geq 1`$, while $`\delta_{0,f,t}`$ may differ), the stock simplifies to:
+Used cars of a given brand and fuel type are perfect substitutes, $`d^{used}_{b,f,t} = \sum_{a=1}^{\infty} d_{a,b,f,t}`$. If depreciation rates are age-independent for $`a \geq 1`$ (i.e. $`\delta_{a,f,t} = \delta_{f,t}`$ for all $`a \geq 1`$, while $`\delta_{0,f,t}`$ may differ), the stock simplifies to:
 
-$$d^{used}_{f,t} = (1 - \delta_{f,t}) d^{used}_{f,t-1} + (1 - \delta_{0,f,t}) d^{new}_{f,t-1}$$
+$$d^{used}_{b,f,t} = (1 - \delta_{f,t}) d^{used}_{b,f,t-1} + (1 - \delta_{0,f,t}) d^{new}_{b,f,t-1}$$
 
 ## Demand System
 
@@ -65,33 +79,43 @@ $$d^{new}_t = \mu^{new} d_t \left(\frac{p^{uc,new}_t}{p^d_t}\right)^{-\sigma}, \
 
 $$p^d_t d_t = p^{uc,new}_t d^{new}_t + p^{uc,used}_t d^{used}_t$$
 
-### New-car nest: across fuel types
+### Brand nest: across brands (new and used)
 
-$$d^{new}_{f,t} = \mu^{new}_f d^{new}_t \left(\frac{p^{uc,new}_{f,t}}{p^{uc,new}_t}\right)^{-\sigma^{new}}$$
+Both new and used cars nest over brands with a common elasticity $`\sigma_b`$:
 
-$$p^{uc,new}_t d^{new}_t = \sum_f p^{uc,new}_{f,t} d^{new}_{f,t}$$
+$$d^{new}_{b,t} = \mu^{new}_b d^{new}_t \left(\frac{p^{uc,new}_{b,t}}{p^{uc,new}_t}\right)^{-\sigma_b}, \qquad d^{used}_{b,t} = \mu^{used}_b d^{used}_t \left(\frac{p^{uc,used}_{b,t}}{p^{uc,used}_t}\right)^{-\sigma_b}$$
 
-The user cost of a new car of fuel type $`f`$ is:
+$$p^{uc,new}_t d^{new}_t = \sum_b p^{uc,new}_{b,t} d^{new}_{b,t}, \qquad p^{uc,used}_t d^{used}_t = \sum_b p^{uc,used}_{b,t} d^{used}_{b,t}$$
 
-$$p^{uc,new}_{f,t} = p^{new}_{f,t} - \frac{1 - \delta_{0,f,t+1}}{1 + r_{t+1}} p^{used}_{f,t+1}$$
+A brand owner who controls all fuel types within brand $`b`$ internalises within-brand substitution but competes against other brands at the $`\sigma_b`$ level. Higher $`\sigma_b`$ means more substitutable brands, reducing individual brand market power.
 
-### Used-car nest: across fuel types (with habits)
+### Fuel-type nest within each brand (new cars)
 
-The CES aggregator in this nest is defined over habit-adjusted quantities $`d^{used}_{f,t} - h_f d^{used}_{f,t-1}`$, where $`h_f \in (0,1)`$ is a habit parameter. Only the stock in excess of the habit reference point generates marginal utility, creating inertia: a household with a large inherited stock of fuel type $`f`$ finds it costly to reduce holdings.
+$$d^{new}_{b,f,t} = \mu^{new}_f d^{new}_{b,t} \left(\frac{p^{uc,new}_{b,f,t}}{p^{uc,new}_{b,t}}\right)^{-\sigma^{new}}$$
 
-$$d^{used}_{f,t} - h_f d^{used}_{f,t-1} = \mu^{used}_f d^{used}_t \left(\frac{p^{uc}_{f,t}}{p^{uc,used}_t}\right)^{-\sigma^{used}}$$
+$$p^{uc,new}_{b,t} d^{new}_{b,t} = \sum_f p^{uc,new}_{b,f,t} d^{new}_{b,f,t}$$
 
-$$p^{uc,used}_t d^{used}_t = \sum_f p^{uc}_{f,t} \left(d^{used}_{f,t} - h_f d^{used}_{f,t-1}\right)$$
+The user cost of a new car of brand $`b`$, fuel type $`f`$ is:
 
-The user cost of a used car of fuel type $`f`$ is:
+$$p^{uc,new}_{b,f,t} = p^{new}_{b,f,t} - \frac{1 - \delta_{0,f,t+1}}{1 + r_{t+1}} p^{used}_{b,f,t+1}$$
 
-$$p^{uc}_{f,t} = p^{used}_{f,t} - \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} p^{used}_{f,t+1} + \beta_h \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} h_f p^{uc,used}_{t+1} \mu^{used}_f \left(\frac{d^{used}_{t+1}}{d^{used}_{f,t+1} - h_f d^{used}_{f,t}}\right)^{1/\sigma^{used}}$$
+### Fuel-type nest within each brand (used cars, with habits)
 
-The third term is the **habit premium**: holding more used cars of type $`f`$ today raises next period's reference point by $`h_f(1 - \delta_{f,t+1})`$, reducing the effective service flow and increasing the marginal cost of maintaining the same utility level tomorrow. When $`h_f = 0`$ the habit premium vanishes. The parameter $`\beta_h \in [0,1]`$ controls how forward-looking the household is with respect to this habit: $`\beta_h = 1`$ is fully forward-looking (the baseline), $`\beta_h = 0`$ is myopic.
+The CES aggregator in this nest is defined over habit-adjusted quantities $`d^{used}_{b,f,t} - h_f d^{used}_{b,f,t-1}`$, where $`h_f \in (0,1)`$ is a habit parameter. Only the stock in excess of the habit reference point generates marginal utility, creating inertia: a household with a large inherited stock of brand $`b`$, fuel type $`f`$ finds it costly to reduce holdings.
+
+$$d^{used}_{b,f,t} - h_f d^{used}_{b,f,t-1} = \mu^{used}_f d^{used}_{b,t} \left(\frac{p^{uc}_{b,f,t}}{p^{uc,used}_{b,t}}\right)^{-\sigma^{used}}$$
+
+$$p^{uc,used}_{b,t} d^{used}_{b,t} = \sum_f p^{uc}_{b,f,t} \left(d^{used}_{b,f,t} - h_f d^{used}_{b,f,t-1}\right)$$
+
+The user cost of a used car of brand $`b`$, fuel type $`f`$ is:
+
+$$p^{uc}_{b,f,t} = p^{used}_{b,f,t} - \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} p^{used}_{b,f,t+1} + \beta_h \frac{1 - \delta_{f,t+1}}{1 + r_{t+1}} h_f p^{uc,used}_{b,t+1} \mu^{used}_f \left(\frac{d^{used}_{b,t+1}}{d^{used}_{b,f,t+1} - h_f d^{used}_{b,f,t}}\right)^{1/\sigma^{used}}$$
+
+The third term is the **habit premium**: holding more used cars of brand $`b`$, type $`f`$ today raises next period's reference point by $`h_f(1 - \delta_{f,t+1})`$, reducing the effective service flow and increasing the marginal cost of maintaining the same utility level tomorrow. When $`h_f = 0`$ the habit premium vanishes. The parameter $`\beta_h \in [0,1]`$ controls how forward-looking the household is with respect to this habit: $`\beta_h = 1`$ is fully forward-looking (the baseline), $`\beta_h = 0`$ is myopic.
 
 ## Calibration
 
-The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_f, \mu^{used}_f`$ are calibrated by swapping them for initial-period quantities and solving for the values that match base-year data.
+The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_b, \mu^{used}_b, \mu^{new}_f, \mu^{used}_f`$ are calibrated by swapping them for initial-period quantities and solving for the values that match base-year data. Brands are symmetric at calibration: each brand gets an equal share of total new and used cars.
 
 ### Baseline Parameters
 
@@ -99,13 +123,19 @@ The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_f, \mu^
 |-----------|-------|-------------|
 | $`\sigma_C`$ | 0.5 | Elasticity: cars vs. non-car |
 | $`\sigma`$ | 3.0 | Elasticity: new vs. used |
-| $`\sigma^{new}`$ | 3.0 | Elasticity: across fuel types (new) |
-| $`\sigma^{used}`$ | 3.0 | Elasticity: across fuel types (used) |
+| $`\sigma_b`$ | 5.0 | Elasticity: across brands |
+| $`\sigma^{new}`$ | 3.0 | Elasticity: across fuel types within brand (new) |
+| $`\sigma^{used}`$ | 3.0 | Elasticity: across fuel types within brand (used) |
 | $`h_f`$ | 0.8 | Habit parameter (both fuel types) |
 | $`\beta_h`$ | 1.0 | Habit-premium discount (fully forward-looking) |
 | $`r`$ | 0.04 | Interest rate |
 | $`\delta_0`$ | 0.25 | First-period depreciation (new to used) |
 | $`\delta`$ | 0.10 | Ongoing used-car depreciation |
+| Brands | 3 | Number of symmetric brands |
+
+### Baseline Sanity Checks
+
+![Baseline Sanity Checks](cars_baseline.svg)
 
 ## Scenario 1: EV Subsidy
 
@@ -126,9 +156,9 @@ The first scenario simulates a **10% reduction in the purchase price of electric
 
 The second scenario pairs the **10% EV subsidy** with a **constant endogenous ad-valorem tax on petrol cars** $`\tau_{petrol}`$, calibrated so that the present value of net tax revenue is exactly zero:
 
-$$\sum_t \frac{1}{(1+r_t)^{t-t_1}} \sum_f \tau_{f,t} p^{new}_{f,t} d^{new}_{f,t} = 0$$
+$$\sum_t \frac{1}{(1+r_t)^{t-t_1}} \sum_{b,f} \tau_{b,f,t} p^{new}_{b,f,t} d^{new}_{b,f,t} = 0$$
 
-The consumer-facing purchase price becomes $`p^{new}_{f,t}(1 + \tau_{f,t})`$, which enters the user cost of new cars.
+The consumer-facing purchase price becomes $`p^{new}_{b,f,t}(1 + \tau_{b,f,t})`$, which enters the user cost of new cars.
 
 The required petrol tax rate depends critically on the substitution elasticities. High fuel-type substitutability ($`\sigma^{new} = 3`$) means the EV subsidy erodes the petrol tax base aggressively — households switch away from petrol cars easily, shrinking the revenue that any given tax rate can raise. The petrol tax must therefore be *higher* than the 10% subsidy it finances. More generally, $`\tau_{petrol}`$ is an increasing function of $`\sigma^{new}`$: the easier it is to substitute between fuel types, the more the tax base shrinks, and the higher the rate needed to close the budget. In the limit $`\sigma^{new} \to \infty`$, the tax base vanishes entirely and no finite rate can balance the budget.
 
@@ -143,84 +173,106 @@ The required petrol tax rate depends critically on the substitution elasticities
 - **Used-car spot prices by fuel type** — The petrol resale price *rises* as reduced future supply makes the surviving stock more scarce, while the electric resale price falls as subsidized vehicles flood the secondary market.
 - **Implied tax/subsidy rates** — The constant −10% electric subsidy and the endogenous petrol tax that balances revenue in present value.
 
-## Market Power of New-Car Sellers
+## Market Power of Individual Brand Owners
 
-This analysis measures the market power of new-car sellers by computing the **demand elasticity** from a permanent 1% exogenous increase in all new-car purchase prices $`p^{new}_{f,t}`$. The experiment is repeated across a grid of parameter values for:
+This analysis measures the market power of an **individual brand owner** by computing the **brand-level demand elasticity** from a permanent 1% exogenous increase in one brand's purchase prices $`p^{new}_{b,f,t}`$ (across all its fuel types). The brand owner internalises within-brand fuel-type substitution but competes against other brands at the $`\sigma_b`$ level. The experiment is repeated across a grid of parameter values for:
 
 - **(a)** **Durability** — parameterised by the ongoing used-car depreciation rate $`\delta`$, with the first-period depreciation $`\delta_0`$ fixed.
 - **(b)** The **habit parameter** $`h`$ — which governs the strength of habit formation in the used-car nest.
 - **(c)** The **habit-premium discount** $`\beta_h \in [0,1]`$ — which controls how forward-looking households are *with respect to the habit*. When $`\beta_h = 1`$ the household fully internalises the effect of today's used-car holdings on tomorrow's reference point; when $`\beta_h = 0`$ the household ignores the forward-looking consequences of the habit (while still experiencing the habit in its utility function).
+- **(d)** **Brand substitutability** $`\sigma_b`$ — how this interacts with forward-lookingness ($`\beta_h`$). For each value of $`\sigma_b`$, the elasticity is computed at both $`\beta_h = 1`$ (fully forward-looking) and $`\beta_h = 0`$ (myopic), to see whether more brand variety strengthens or weakens the forward-lookingness effect on market power.
 
-The metric is the **demand elasticity** $`\% \Delta d^{new}`$: the percentage change in new-car purchases in response to the 1% cost-push. A *more negative* value means demand is more elastic, i.e. sellers have *less* market power.
+The metric is the **brand-level demand elasticity** $`\% \Delta d^{new}_b`$: the percentage change in one brand's new-car purchases in response to the 1% cost-push on that brand only. A *more negative* value means demand is more elastic, i.e. the brand owner has *less* market power.
 
 The elasticity is computed at the **impact** (short-run dynamic response in 2026) and in the **steady state** (long-run comparative static).
 
 ### Approach: calibrate once, then vary structural parameters
 
-The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_f, \mu^{used}_f`$ are calibrated **once** at the baseline parameter values ($`\sigma = 3`$, $`h = 0.8`$, $`\beta_h = 1`$). The calibration targets are **stock-consistent**: the steady-state used-car stock is derived from the accumulation identity $`d^{used}_f = \frac{1-\delta_0}{\delta} d^{new}_f`$, and the new-car flow is scaled so that total car services (new plus habit-adjusted used) equal a 50% share of total consumption.
+The share parameters $`\mu_d, \mu_{nc}, \mu^{new}, \mu^{used}, \mu^{new}_b, \mu^{used}_b, \mu^{new}_f, \mu^{used}_f`$ are calibrated **once** at the baseline parameter values ($`\sigma = 3`$, $`\sigma_b = 5`$, $`h = 0.8`$, $`\beta_h = 1`$). The calibration targets are **stock-consistent**: the steady-state used-car stock is derived from the accumulation identity $`d^{used}_{b,f} = \frac{1-\delta_0}{\delta} d^{new}_{b,f}`$, and the new-car flow is scaled so that total car services (new plus habit-adjusted used) equal a 50% share of total consumption. Brands are symmetric.
 
-For each parameter variation, the un-swapped model is solved to obtain a counterfactual equilibrium — an economy with the same preferences (μ's) but different structural parameters. The cost-push shock is then applied on top of this counterfactual equilibrium and the demand response is measured.
+For each parameter variation, the un-swapped model is solved to obtain a counterfactual equilibrium — an economy with the same preferences (μ's) but different structural parameters. The cost-push shock is then applied to one brand on top of this counterfactual equilibrium and the brand-level demand response is measured.
 
 ### Results
 
-![Market Power of New-Car Sellers](market_power.svg)
+![Market Power of Individual Brand Owners](market_power.svg)
 
 #### (a) Effect of Durability
 
-| $`1-\delta`$ | $`\delta`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+| $`1-\delta`$ | $`\delta`$ | Impact $`\%\Delta d^{new}_b`$ | SS $`\%\Delta d^{new}_b`$ |
 |---:|---:|---:|---:|
-| 0.96 | 0.04 | −0.596 | −0.381 |
-| 0.94 | 0.06 | −0.548 | −0.378 |
-| 0.92 | 0.08 | −0.519 | −0.376 |
-| **0.90** | **0.10** | **−0.500** | **−0.374** |
-| 0.88 | 0.12 | −0.485 | −0.372 |
-| 0.84 | 0.16 | −0.464 | −0.370 |
-| 0.80 | 0.20 | −0.449 | −0.368 |
-| 0.75 | 0.25 | −0.435 | −0.367 |
-| 0.70 | 0.30 | −0.424 | −0.366 |
+| 0.96 | 0.04 | −4.551 | −3.471 |
+| 0.94 | 0.06 | −4.147 | −3.379 |
+| 0.92 | 0.08 | −3.849 | −3.300 |
+| **0.90** | **0.10** | **−3.614** | **−3.232** |
+| 0.88 | 0.12 | −3.419 | −3.173 |
+| 0.84 | 0.16 | −3.107 | −3.077 |
+| 0.80 | 0.20 | −2.864 | −3.002 |
+| 0.75 | 0.25 | −2.621 | −2.928 |
+| 0.70 | 0.30 | −2.425 | −2.869 |
 
-**More durable cars reduce market power.** Lower $`\delta`$ means used cars last longer, building up a larger used-car stock in steady state ($`d^{used}_f = \frac{1-\delta_0}{\delta} d^{new}_f`$). This creates a larger competitive fringe that constrains new-car pricing — the **Coase conjecture** at work.
+**More durable cars reduce brand market power.** Lower $`\delta`$ means used cars last longer, building up a larger used-car stock in steady state ($`d^{used}_{b,f} = \frac{1-\delta_0}{\delta} d^{new}_{b,f}`$). This creates a larger competitive fringe that constrains brand pricing — the **Coase conjecture** at work, now operating at the brand level.
 
-The effect is quantitatively more pronounced in the **short run** (impact) than in the steady state. The short-run response is larger because the used-car stock is predetermined at impact — it cannot adjust immediately — so the full forward-looking anticipation of future resale value changes is priced in at once, amplifying the demand response. At $`\delta = 0.04`$ (96% annual survival), the impact elasticity is nearly 40% larger in magnitude than at $`\delta = 0.30`$.
+The effect is quantitatively more pronounced in the **short run** (impact) than in the steady state. The short-run response is larger because the used-car stock (which now retains brand identity) is predetermined at impact — it cannot adjust immediately — so the full forward-looking anticipation of future resale value changes is priced in at once, amplifying the demand response. At $`\delta = 0.04`$ (96% survival), the impact elasticity is nearly twice as large as at $`\delta = 0.30`$.
 
 #### (b) Effect of Habit Persistence
 
-| $`h`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+| $`h`$ | Impact $`\%\Delta d^{new}_b`$ | SS $`\%\Delta d^{new}_b`$ |
 |---:|---:|---:|
-| 0.00 | −0.679 | −0.382 |
-| 0.20 | −0.641 | −0.380 |
-| 0.35 | −0.610 | −0.379 |
-| 0.55 | −0.565 | −0.376 |
-| 0.70 | −0.527 | −0.375 |
-| **0.80** | **−0.500** | **−0.374** |
-| 0.85 | −0.484 | −0.374 |
-| 0.90 | −0.468 | −0.374 |
+| 0.00 | −4.463 | −4.517 |
+| 0.10 | −4.446 | −4.498 |
+| 0.20 | −4.145 | −3.379 |
+| 0.35 | −4.056 | −3.336 |
+| 0.55 | −3.922 | −3.279 |
+| 0.70 | −3.784 | −3.242 |
+| **0.80** | **−3.614** | **−3.232** |
+| 0.85 | −3.446 | −3.239 |
+| 0.90 | −3.110 | −3.267 |
 
-**Stronger habits increase market power.** Higher $`h`$ means households inheriting a used-car stock find it costly to deviate from their current composition, because the habit-adjusted service flow $`d^{used}_{f,t} - h d^{used}_{f,t-1}`$ shrinks. This reduces competitive pressure from the used market on new-car sellers, raising market power. The effect is large in the short run — the impact elasticity falls by about a third between $`h = 0`$ and $`h = 0.9`$ — but modest in the steady state, where it saturates around $`h \approx 0.8`$.
+**Stronger habits increase brand market power.** Higher $`h`$ means households inheriting a used-car stock find it costly to deviate from their current brand-fuel composition, because the habit-adjusted service flow $`d^{used}_{b,f,t} - h d^{used}_{b,f,t-1}`$ shrinks. This reduces competitive pressure from the used market on new-car brand owners, raising market power. The impact elasticity falls from −4.46 at $`h = 0`$ to −3.11 at $`h = 0.9`$, a reduction of about 30% in the short run.
 
 #### (c) Effect of Forward-Lookingness ($`\beta_h`$)
 
-| $`\beta_h`$ | Impact $`\%\Delta d^{new}`$ | SS $`\%\Delta d^{new}`$ |
+| $`\beta_h`$ | Impact $`\%\Delta d^{new}_b`$ | SS $`\%\Delta d^{new}_b`$ |
 |---:|---:|---:|
-| 0.0 (myopic) | −0.542 | −0.385 |
-| 0.3 | −0.530 | −0.382 |
-| 0.5 | −0.521 | −0.380 |
-| 0.7 | −0.513 | −0.378 |
-| **1.0** (fully forward-looking) | **−0.500** | **−0.374** |
+| 0.0 (myopic) | −4.334 | −3.632 |
+| 0.25 | −4.182 | −3.557 |
+| 0.5 | −4.014 | −3.468 |
+| 0.7 | −3.866 | −3.384 |
+| 0.8 | −3.786 | −3.337 |
+| 0.9 | −3.702 | −3.287 |
+| **1.0** (fully forward-looking) | **−3.614** | **−3.232** |
 
-**More forward-looking households face *less* elastic demand — i.e., new-car sellers have *more* market power.** When $`\beta_h = 1`$, the household internalises the habit premium — it knows that holding more used cars today raises tomorrow's reference point. This makes used cars *more expensive* in effective terms (higher user cost), *reducing* competitive pressure on new-car sellers and giving them more pricing power.
+**More forward-looking households face *less* elastic brand-level demand — i.e., brand owners have *more* market power.** When $`\beta_h = 1`$, the household internalises the habit premium — it knows that holding more used cars of brand $`b`$ today raises tomorrow's reference point. This makes used cars *more expensive* in effective terms (higher user cost), *reducing* competitive pressure from used cars of the same brand and giving the brand owner more pricing power.
 
-When $`\beta_h = 0`$ (myopic), the household ignores the habit premium entirely. Used cars look cheaper than they "truly" are, so households treat them as a stronger competitive substitute to new cars. This makes new-car demand more elastic and reduces seller market power.
+When $`\beta_h = 0`$ (myopic), the household ignores the habit premium entirely. Used cars of brand $`b`$ look cheaper than they "truly" are, so households treat them as a stronger competitive substitute. This makes brand-level demand more elastic and reduces seller market power.
 
-The effect is about 4 percentage points in the impact elasticity and 1 pp in the SS elasticity between the fully myopic and fully forward-looking cases.
+The effect is about 0.72 pp in the impact elasticity and 0.40 pp in the SS elasticity between the fully myopic and fully forward-looking cases.
 
-#### Summary: Three Forces on Market Power
+#### (d) Brand Substitutability × Forward-Lookingness
+
+| $`\sigma_b`$ | Impact (fwd) | Impact (myopic) | Gap | SS (fwd) | SS (myopic) | Gap |
+|---:|---:|---:|---:|---:|---:|---:|
+| 2.0 | −1.362 | −1.539 | 0.177 | −1.344 | −1.449 | 0.105 |
+| 3.0 | −2.068 | −2.415 | 0.347 | −1.946 | −2.149 | 0.203 |
+| 4.0 | −2.829 | −3.360 | 0.532 | −2.582 | −2.885 | 0.303 |
+| **5.0** | **−3.614** | **−4.334** | **0.720** | **−3.232** | **−3.632** | **0.400** |
+| 6.0 | −4.411 | −5.320 | 0.909 | −3.888 | −4.382 | 0.494 |
+| 8.0 | −6.019 | −7.302 | 1.282 | −5.206 | −5.881 | 0.676 |
+| 10.0 | −7.631 | −9.277 | 1.646 | −6.521 | −7.370 | 0.848 |
+
+Panel (d) shows the **impact elasticity** as a function of $`\sigma_b`$ for both $`\beta_h = 1`$ (forward-looking) and $`\beta_h = 0`$ (myopic). The shaded area between the two curves is the **forward-lookingness premium** — the extra market power that forward-looking habit internalization gives brand owners.
+
+**More brand variety amplifies the forward-lookingness effect.** The gap between the myopic and forward-looking curves widens as $`\sigma_b`$ increases — from 0.18 pp at $`\sigma_b = 2`$ to 1.65 pp at $`\sigma_b = 10`$. The mechanism: when brands are highly substitutable, the used-car outside option matters more because consumers can easily switch brands. Forward-looking households who internalise the habit premium perceive this outside option as more costly (since accumulating used cars of any brand raises future reference points), so the habit-premium channel has more room to bite. At low $`\sigma_b`$, brands are already near-captive markets, so the habit channel adds little on top of the brand lock-in that $`\sigma_b`$ already provides.
+
+In other words, **brand variety and forward-lookingness are complements for market power**: the more competitive the brand landscape, the more valuable it is for sellers that households internalise the habit cost of used cars.
+
+#### Summary: Three Forces on Brand Market Power
 
 | Channel | Effect on market power | Mechanism |
 |---|---|---|
-| **Durability ↑** | ↓ Less market power | Durable goods compete with themselves (Coase conjecture) |
-| **Habits ↑** | ↑ More market power | Lock-in reduces competitive pressure from used cars; effect saturates at high $`h`$ |
-| **Forward-lookingness ↑** | ↑ More market power | Internalising habit premium raises the effective cost of used cars, weakening the used-car outside option |
+| **Durability ↑** | ↓ Less market power | Durable goods compete with themselves (Coase conjecture), with brand-specific used stocks |
+| **Habits ↑** | ↑ More market power | Lock-in reduces competitive pressure from used cars of the same brand |
+| **Forward-lookingness ↑** | ↑ More market power | Internalising habit premium raises the effective cost of same-brand used cars; effect is amplified when brands are more substitutable |
 
 ## Running
 
@@ -231,7 +283,7 @@ julia --project=. market_power.jl
 
 `cars.jl` solves the baseline calibration, runs both counterfactual scenarios, and saves plots to `cars_baseline.svg`, `cars_scenario1.svg`, and `cars_scenario2.svg`.
 
-`market_power.jl` calibrates the model once at baseline parameters, computes the demand elasticities for each parameter variation, and saves the three-panel figure to `market_power.svg`.
+`market_power.jl` calibrates the model once at baseline parameters, computes the brand-level demand elasticities for each parameter variation, and saves the four-panel figure to `market_power.svg`.
 
 Both scripts share the model definition from `car_model.jl`.
 

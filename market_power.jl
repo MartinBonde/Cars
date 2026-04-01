@@ -1,22 +1,20 @@
-# Market Power of New-Car Sellers
+# Market Power of Individual Brand Owners
 #
-# Measures how new-car seller market power depends on:
+# Measures how a single brand owner's market power depends on:
 #   a) Durability of used cars (ongoing depreciation δ)
 #   b) Habit parameter h_f
 #   c) Forward-lookingness wrt habits (β_h)
+#   d) Brand substitutability (σ_brand) — does more variety strengthen
+#      or weaken the forward-lookingness effect?
 #
-# Approach:
-#   1. Calibrate μ's ONCE at baseline parameters.
-#   2. For each parameter variation, solve the un-swapped model to get a
-#      new equilibrium (the "counterfactual baseline") — same μ's, different structure.
-#   3. Apply a tiny cost-push shock on top and measure the demand elasticity.
-#
-# This separates the effect of the structural parameter from recalibration.
+# The cost-push shock is applied to ONE brand only (brand1).
+# The brand owner internalises within-brand fuel-type substitution but
+# competes against other brands at the σ_brand level.
 
 include("car_model.jl")
 
 # ==============================================================================
-# Calibrate ONCE at baseline parameters (σ = 3.0, β_h = 1.0)
+# Calibrate ONCE at baseline parameters
 # ==============================================================================
 baseline_ss = calibrate(full_horizon=false)
 
@@ -25,40 +23,43 @@ baseline_ss = calibrate(full_horizon=false)
 # ==============================================================================
 const ε = 0.01
 const short_T = 2040
+const shock_brand = :brand1
 
 function is_valid(q_pct)
 	abs(q_pct) < 10
 end
 
-"""Compute steady-state demand elasticity at a given parameter variation."""
-function ss_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_val=1.0)
+"""Compute steady-state demand elasticity of a single brand to a brand-specific cost-push."""
+function ss_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_val=1.0, σ_brand_val=5.0)
 	cf = copy(baseline_ss)
 	cf[δ_new_f] .= δ_new
 	cf[δ_used_f] .= δ_used
 	cf[h_f] = [h, h]
 	cf[β_h] = β_h_val
+	cf[σ_brand] = σ_brand_val
 
 	global T = t₁
 	ss_model = equations() + steady_state()
 	solve!(ss_model, cf)
 
 	shocked = copy(cf)
-	shocked[p_new_f[:, t₁]] .= cf[p_new_f[:, t₁]] .* (1 + ε)
+	shocked[p_new_bf[shock_brand, :, t₁]] .= cf[p_new_bf[shock_brand, :, t₁]] .* (1 + ε)
 	solve!(ss_model, shocked)
 	global T = max_T
 
-	q_pct = (shocked[car_new[t₁]] / cf[car_new[t₁]] - 1) * 100
+	q_pct = (shocked[car_new_b[shock_brand, t₁]] / cf[car_new_b[shock_brand, t₁]] - 1) * 100
 	is_valid(q_pct) || return nothing
 	return q_pct
 end
 
-"""Compute impact (short-run dynamic) demand elasticity."""
-function impact_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_val=1.0, shock_year=2026)
+"""Compute impact (short-run dynamic) demand elasticity of a single brand."""
+function impact_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_val=1.0, σ_brand_val=5.0, shock_year=2026)
 	cf = copy(baseline_ss)
 	cf[δ_new_f] .= δ_new
 	cf[δ_used_f] .= δ_used
 	cf[h_f] = [h, h]
 	cf[β_h] = β_h_val
+	cf[σ_brand] = σ_brand_val
 
 	global T = t₁
 	ss_model = equations() + steady_state()
@@ -70,11 +71,11 @@ function impact_elasticity(baseline_ss; δ_new=0.25, δ_used=0.10, h=0.8, β_h_v
 	solve!(fm, cf)
 
 	shocked = copy(cf)
-	shocked[p_new_f[:, shock_year:T]] .= cf[p_new_f[:, shock_year:T]] .* (1 + ε)
+	shocked[p_new_bf[shock_brand, :, shock_year:T]] .= cf[p_new_bf[shock_brand, :, shock_year:T]] .* (1 + ε)
 	solve!(fm, shocked)
 	global T = max_T
 
-	q_pct = (shocked[car_new[shock_year]] / cf[car_new[shock_year]] - 1) * 100
+	q_pct = (shocked[car_new_b[shock_brand, shock_year]] / cf[car_new_b[shock_brand, shock_year]] - 1) * 100
 	is_valid(q_pct) || return nothing
 	return q_pct
 end
@@ -161,12 +162,51 @@ for bv in β_h_values
 end
 
 # ==============================================================================
+# d) Brand substitutability × forward-lookingness interaction
+#    For each σ_brand, compute the gap in brand-level elasticity between
+#    β_h = 1 (fully forward-looking) and β_h = 0 (myopic).
+# ==============================================================================
+println("\n" * "=" ^ 60)
+println("(d) Sweeping σ_brand (β_h = 0 vs β_h = 1)...")
+println("=" ^ 60)
+
+σ_brand_values = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
+
+brand_σ = Float64[]
+brand_impact_fwd = Float64[]
+brand_impact_myopic = Float64[]
+brand_ss_fwd = Float64[]
+brand_ss_myopic = Float64[]
+
+for σb in σ_brand_values
+	print("  σ_brand=$(σb)... ")
+	ss_f = ss_elasticity(baseline_ss; σ_brand_val=σb, β_h_val=1.0)
+	ss_m = ss_elasticity(baseline_ss; σ_brand_val=σb, β_h_val=0.0)
+	imp_f = impact_elasticity(baseline_ss; σ_brand_val=σb, β_h_val=1.0)
+	imp_m = impact_elasticity(baseline_ss; σ_brand_val=σb, β_h_val=0.0)
+	if all(x -> x !== nothing, (ss_f, ss_m, imp_f, imp_m))
+		push!(brand_σ, σb)
+		push!(brand_impact_fwd, imp_f)
+		push!(brand_impact_myopic, imp_m)
+		push!(brand_ss_fwd, ss_f)
+		push!(brand_ss_myopic, ss_m)
+		println("✓  fwd: imp=$(round(imp_f, digits=4))% ss=$(round(ss_f, digits=4))%  " *
+		        "myopic: imp=$(round(imp_m, digits=4))% ss=$(round(ss_m, digits=4))%")
+	else
+		println("✗ solver anomaly, skipping")
+	end
+end
+
+# ==============================================================================
 # Plotting
 # ==============================================================================
 c_impact = RGBAf(0.122, 0.467, 0.706, 1.0)   # Tableau blue
 c_ss     = RGBAf(0.890, 0.467, 0.157, 1.0)    # Tableau orange
 c_fill   = RGBAf(0.122, 0.467, 0.706, 0.10)   # faint blue fill
 c_base   = RGBAf(0.15, 0.15, 0.15, 1.0)       # near-black for baseline marker
+c_fwd    = RGBAf(0.122, 0.467, 0.706, 1.0)    # blue for forward-looking
+c_myopic = RGBAf(0.890, 0.467, 0.157, 1.0)    # orange for myopic
+c_gap    = RGBAf(0.5, 0.2, 0.6, 0.12)         # faint purple fill for gap
 
 function style_ax!(ax)
 	ax.xgridvisible = false
@@ -198,12 +238,12 @@ function plot_sweep!(ax, x, impact, ss; baseline_x=nothing)
 	end
 end
 
-fig = Figure(size=(1500, 520), backgroundcolor=:white)
-ylabel_str = "Δ new-car quantity  (% per 1 % cost-push)"
+fig = Figure(size=(1500, 1000), backgroundcolor=:white)
+ylabel_str = "Δ brand quantity  (% per 1 % cost-push)"
 
 # ── Title row ────────────────────────────────────────────────────────────────
-Label(fig[1, 1:3],
-	"Market Power of New-Car Sellers";
+Label(fig[1, 1:2],
+	"Market Power of Individual Brand Owners  ($(length(b)) symmetric brands)";
 	fontsize=20, font=:bold, halign=:center, padding=(0, 0, 6, 0))
 
 # ── Panel (a): Durability ────────────────────────────────────────────────────
@@ -220,14 +260,31 @@ ax2.ylabelvisible = false
 plot_sweep!(ax2, hab_h, hab_impact, hab_ss; baseline_x=0.8)
 
 # ── Panel (c): Forward-lookingness ───────────────────────────────────────────
-ax3 = Axis(fig[2,3]; title="(c)  Forward-lookingness  (βₕ ,  h = 0.8)",
-	xlabel="Habit-premium discount  βₕ\n(0 = myopic  ·  1 = fully forward-looking)", ylabel="")
+ax3 = Axis(fig[3,1]; title="(c)  Forward-lookingness  (βₕ ,  h = 0.8)",
+	xlabel="Habit-premium discount  βₕ\n(0 = myopic  ·  1 = fully forward-looking)", ylabel=ylabel_str)
 style_ax!(ax3)
-ax3.ylabelvisible = false
 plot_sweep!(ax3, fwd_β, fwd_impact, fwd_ss; baseline_x=1.0)
 
+# ── Panel (d): Brand variety × forward-lookingness ───────────────────────────
+ax4 = Axis(fig[3,2]; title="(d)  Brand substitutability × forward-lookingness",
+	xlabel="Brand elasticity  σ_brand\n(higher = more substitutable brands)", ylabel="")
+style_ax!(ax4)
+ax4.ylabelvisible = false
+
+band!(ax4, brand_σ, brand_impact_fwd, brand_impact_myopic; color=c_gap)
+lines!(ax4, brand_σ, brand_impact_fwd; color=c_fwd, linewidth=2.5, label="βₕ = 1 (forward-looking)")
+scatter!(ax4, brand_σ, brand_impact_fwd; color=c_fwd, markersize=5)
+lines!(ax4, brand_σ, brand_impact_myopic; color=c_myopic, linewidth=2.5, linestyle=:dash, label="βₕ = 0 (myopic)")
+scatter!(ax4, brand_σ, brand_impact_myopic; color=c_myopic, markersize=5)
+bi = findfirst(==(5.0), brand_σ)
+if bi !== nothing
+	scatter!(ax4, [brand_σ[bi]], [brand_impact_fwd[bi]]; color=c_base, markersize=12, marker=:diamond)
+	scatter!(ax4, [brand_σ[bi]], [brand_impact_myopic[bi]]; color=c_base, markersize=12, marker=:diamond)
+end
+axislegend(ax4; position=:rb, framevisible=false, labelsize=10)
+
 # ── Shared legend ────────────────────────────────────────────────────────────
-Legend(fig[3, 1:3],
+Legend(fig[4, 1:2],
 	[LineElement(color=c_impact, linewidth=2.5),
 	 LineElement(color=c_ss, linewidth=2.5, linestyle=:dash),
 	 [PolyElement(color=c_fill)],
@@ -238,15 +295,17 @@ Legend(fig[3, 1:3],
 	padding=(0, 0, 0, 0), colgap=24,
 	tellwidth=false, tellheight=true, halign=:center)
 
-Label(fig[4, 1:3],
-	"More negative  ←  more elastic demand  =  less market power for new-car sellers.   " *
-	"Share parameters calibrated once at baseline (◆).";
+Label(fig[5, 1:2],
+	"More negative  ←  more elastic demand  =  less market power for brand owner.   " *
+	"Share parameters calibrated once at baseline (◆).   " *
+	"Shock applied to $(shock_brand) only.";
 	fontsize=10, halign=:center, color=:grey45, padding=(0, 0, 0, 2))
 
 # Tighten layout
 rowgap!(fig.layout, 1, 2)
-rowgap!(fig.layout, 2, 6)
-rowgap!(fig.layout, 3, 2)
+rowgap!(fig.layout, 2, 10)
+rowgap!(fig.layout, 3, 6)
+rowgap!(fig.layout, 4, 2)
 colgap!(fig.layout, 16)
 
 save("market_power.svg", fig)
